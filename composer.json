@@ -11,5 +11,7 @@
             "email": "gustavodemoura.sbo@gmail.com"
         }
     ],
-    "require": {}
+    "require": {
+        "william-costa/dot-env": "^0.1.0"
+    }
 }

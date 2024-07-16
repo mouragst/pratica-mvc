@@ -14,7 +14,7 @@ class About extends Page {
     public static function getAbout() {
         $organization = new Organization;
 
-        // VIEW DA HOME
+        // VIEW DO SOBRE
         $content = View::render('pages/about', [
             'name' => $organization->name,
             'description' => $organization->description,
