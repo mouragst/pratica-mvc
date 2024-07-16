@@ -4,8 +4,8 @@ namespace App\Http;
 
 use \Closure;
 use Exception;
+use \ReflectionFunction;
 use App\Http\Request;
-use LDAP\Result;
 
 class Router {
 
@@ -36,6 +36,13 @@ class Router {
             }
         }
 
+        $params['variables'] = [];
+        
+        $patternVariable = '/{(.*?)}/';
+        if (preg_match_all($patternVariable, $route, $matches)) {
+            $route = preg_replace($patternVariable, '(.*?)', $route);
+            $params['variables'] = $matches[1];
+        }
         $patternRoute = '/^'.str_replace('/', '\/', $route).'$/';
 
         $this->routes[$patternRoute][$method] = $params;
@@ -68,9 +75,15 @@ class Router {
         $httpMethod = $this->request->getHttpMethod();
 
         foreach ($this->routes as $paternRoute => $method) {
-            if(preg_match($paternRoute, $uri)) {
+            if(preg_match($paternRoute, $uri, $matches)) {
                 if($method[$httpMethod]) {
-                    return $method[$httpMethod];
+                    if(isset($method[$httpMethod])) {
+                        unset($matches[0]);
+                        $keys = $method[$httpMethod]['variables'];
+                        $method[$httpMethod]['variables'] = array_combine($keys, $matches);
+                        $method[$httpMethod]['variables']['request'] = $this->request;
+                        return $method[$httpMethod];
+                    }
                 }
                 throw new Exception("Método não permitido", 405);
             }
@@ -81,14 +94,21 @@ class Router {
     public function run() {
         try {
             $route = $this->getRoute();
-            return new Response(200, $route);
 
             if (!isset($route['controller'])) {
                 throw new Exception("URL não pôde ser processado", 500);
             }
+
+            $args = [];
+
+            $reflection = new ReflectionFunction($route['controller']);
+            foreach ($reflection->getParameters() as $parameter) {
+                $name = $parameter->getName();
+                $args[$name] = $route['variables'][$name] ?? '';
+            }
+            return call_user_func_array($route['controller'], $args);
         } catch (Exception $e) {
             return new Response($e->getCode(), $e->getMessage());
         }
     }
-
 }

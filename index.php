@@ -2,19 +2,19 @@
 
 require "vendor/autoload.php";
 
-use App\Controller\Pages\Home;
-use App\Http\Response;
+use App\Utils\View;
 use App\Http\Router;
+
 
 define('URL', 'http://localhost:5000');
 
+View::init([
+    'URL' => URL,
+]);
+
 $router = new Router(URL);
 
-$router->get('/', [
-    function() {
-        return new Response(200, Home::getHome());
-    }
-]);
+include "routes/pages.php";
 
 $router->run()->sendResponse();
 
